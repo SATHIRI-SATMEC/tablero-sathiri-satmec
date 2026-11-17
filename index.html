@@ -358,7 +358,7 @@ var MES3=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic
 var RO_MSG='Puedes ver todo, pero no guardar cambios. Pide al gerente que te comparta la app como editor.';
 var API_URL='https://script.google.com/macros/s/AKfycbzkH7NiMOSos7CJ7_0hScc-mJZhW9EaR_C2crlHyTcKPql4vnWFB6Xk3eCrtgq-9ORBXg/exec'; /* pega aquí, entre las comillas, el enlace de la aplicación web de Apps Script (termina en /exec) */
 var session={pin:''};try{session.pin=localStorage.getItem('tablero.pin')||sessionStorage.getItem('tablero.pin')||''}catch(e){}
-var APP_V='2026-11-17c';
+var APP_V='2026-11-17d';
 var sync={pend:0,reconcile:false,refreshing:false,last:0,off:false,fromCache:false};
 var CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 12.5l4 4 8-9"/></svg>';
 var PLUS='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
@@ -814,7 +814,8 @@ function dlgTask(id,preset){
     '<div class="row2">'+field('Fecha límite','<input id="t-vence" name="vence" type="date" value="'+esc(v.vence)+'">')+
     field('Estado','<select id="t-estado" name="estado">'+EST_T.map(function(s){return '<option'+(s===v.estado?' selected':'')+'>'+s+'</option>'}).join('')+'</select>')+'</div>'+
     (esSubT?'':radios('Empresa','emp',['SATHIRI','SATMEC'],vEmp))+radios('Prioridad','prio',PRIOS,v.prioridad)+
-    (x&&!x.padreId&&(st.subOK||subsCount)?'<section class="subs" id="subs-box">'+subsHtml(x)+'</section>':'')+
+    (x&&!x.padreId&&(st.subOK||subsCount)?'<section class="subs" id="subs-box">'+subsHtml(x)+'</section>':
+      (x&&!x.padreId&&full()?'<section class="subs"><div class="subhead"><h3>Subtareas</h3></div><p class="dmsg">Para usar subtareas falta actualizar el código de Apps Script de la hoja: pegar el archivo Codigo.gs nuevo y publicarlo con «Gestionar implementaciones → Editar → Nueva versión».</p></section>':''))+
     (id?'<section class="notes"><h3>Avances y comentarios</h3><div id="notes-list">'+notesHtml(x)+'</div>'+
       '<div class="note-add needs-write"><textarea id="t-nota" rows="2" maxlength="2000" aria-label="Nuevo avance" placeholder="Escribe un avance o comentario"></textarea>'+
       (yo?'':'<p class="hint" style="margin:0;align-self:flex-start">Elige tu nombre en “Yo soy” para firmar tus avances.</p>')+
