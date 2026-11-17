@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Tablero SATHIRI y SATMEC</title>
 <meta name="theme-color" content="#1D5BA6">
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tablero">
@@ -357,6 +358,7 @@ var MES3=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic
 var RO_MSG='Puedes ver todo, pero no guardar cambios. Pide al gerente que te comparta la app como editor.';
 var API_URL='https://script.google.com/macros/s/AKfycbzkH7NiMOSos7CJ7_0hScc-mJZhW9EaR_C2crlHyTcKPql4vnWFB6Xk3eCrtgq-9ORBXg/exec'; /* pega aquí, entre las comillas, el enlace de la aplicación web de Apps Script (termina en /exec) */
 var session={pin:''};try{session.pin=localStorage.getItem('tablero.pin')||sessionStorage.getItem('tablero.pin')||''}catch(e){}
+var APP_V='2026-11-17c';
 var sync={pend:0,reconcile:false,refreshing:false,last:0,off:false,fromCache:false};
 var CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 12.5l4 4 8-9"/></svg>';
 var PLUS='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
@@ -1050,12 +1052,29 @@ $('#loginForm').addEventListener('submit',async function(e){
 });
 window.addEventListener('hashchange',function(){readHash();render();window.scrollTo(0,0)});
 
+/* ---------- versión nueva publicada: la app se actualiza sola ---------- */
+var avisoVersion=false;
+async function revisarVersion(){
+  try{
+    var r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;
+    var v=(await r.json()).v;if(!v||v===APP_V)return;
+    var ya='';try{ya=sessionStorage.getItem('tablero.recargaPara')||''}catch(e){}
+    if(ya!==v&&!dlg.open&&sync.pend===0){
+      try{sessionStorage.setItem('tablero.recargaPara',v)}catch(e){}
+      location.replace(location.pathname+'?v='+encodeURIComponent(v)+location.hash);return;
+    }
+    if(!avisoVersion){avisoVersion=true;showBanner('Hay una versión nueva de la app.','info');var b=document.createElement('button');b.type='button';b.className='btn';b.textContent='Actualizar';b.addEventListener('click',function(){location.replace(location.pathname+'?v='+encodeURIComponent(v)+'&r='+Date.now()+location.hash)});bannerText.appendChild(b)}
+  }catch(e){}
+}
+
 /* ---------- inicio ---------- */
 function init(){
   readHash();render();
   if(!API_URL){$('#loginErr').textContent='Falta conectar la app con la hoja de Google (enlace de Apps Script).';return}
   if(session.pin){var c=loadCache();if(c){sync.fromCache=true;sync.last=c.t;applyData(c.j,true)}refresh()}
   setInterval(function(){if(document.visibilityState==='visible'&&session.pin&&!dlg.open)refresh()},45000);
+  revisarVersion();setInterval(function(){if(document.visibilityState==='visible')revisarVersion()},300000);
+  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')revisarVersion()});
   document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&session.pin)refresh()});
 }
 init();
