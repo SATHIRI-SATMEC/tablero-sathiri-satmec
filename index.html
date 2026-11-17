@@ -42,6 +42,7 @@
   --shadow:0 18px 50px rgba(0,0,0,.55); --scrim:rgba(0,0,0,.6); --lift:0 1px 2px rgba(0,0,0,.5);
   color-scheme:dark;
 }
+*,*::before,*::after{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.45}
 img{max-width:100%}
@@ -160,6 +161,17 @@ body.ro .needs-write{display:none!important}
 .tbody{background:none;border:0;padding:0;text-align:left;cursor:pointer;min-width:0;display:flex;flex-direction:column;gap:5px;width:100%}
 .ttl{font-weight:600;line-height:1.3;overflow-wrap:anywhere}
 .trow.done .ttl{color:var(--ink-2);text-decoration:line-through;text-decoration-thickness:1px}
+.ptitle{font-size:.82rem;color:var(--ink-2);overflow-wrap:anywhere}
+.ptitle b{color:var(--ink);font-weight:600}
+.subs{border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:10px}
+.subhead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.subhead h3{margin:0;font-size:1rem}
+.subhead .n{font-family:var(--font-data);font-size:.8rem;color:var(--ink-2);font-weight:500;margin-left:6px}
+.subs .bar{flex:none;width:100%}
+.allok{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--good-soft);border-radius:9px;padding:10px 12px}
+.allok p{margin:0;flex:1 1 180px;color:var(--good);font-weight:600}
+.inherit{background:var(--bg);border-radius:9px;padding:10px 12px;font-size:.93rem;display:flex;flex-direction:column;gap:4px}
+.inherit .lnk{text-align:left}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{font-size:.8rem;padding:2px 9px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);white-space:nowrap;line-height:1.5}
 .chip.bad{background:var(--bad-soft);color:var(--bad);font-weight:600}
@@ -380,7 +392,7 @@ function firstName(n){return n.split(/\s+/)[0]||n}
 var NORM={
   personal:function(id,d){return{id:id,nombre:str(d.nombre,120)||'Sin nombre',cargo:str(d.cargo,120),tipo:d.tipo==='Obra'?'Obra':'Oficina',telefono:str(d.telefono,40),activo:d.activo!==false,empresa:(d.empresa==='SATHIRI'||d.empresa==='SATMEC')?d.empresa:'Ambas',vistaCompleta:d.vistaCompleta===true}},
   proyectos:function(id,d){return{id:id,nombre:str(d.nombre,160)||'Obra sin nombre',cliente:str(d.cliente,160),ciudad:str(d.ciudad,80),residenteId:str(d.residenteId,80),inicio:dateOr(d.inicio),fin:dateOr(d.fin),monto:numOrNull(d.monto),estado:EST_O.indexOf(d.estado)>=0?d.estado:'Activo',avance:pct(d.avance)||0,creado:Number(d.creado)||0,empresa:d.empresa==='SATMEC'?'SATMEC':'SATHIRI'}},
-  tareas:function(id,d){return{id:id,empresa:d.empresa==='SATMEC'?'SATMEC':'SATHIRI',titulo:str(d.titulo,200)||'Tarea sin título',detalle:str(d.detalle,4000),proyectoId:str(d.proyectoId,80),responsableId:str(d.responsableId,80),prioridad:PRIOS.indexOf(d.prioridad)>=0?d.prioridad:'Media',vence:dateOr(d.vence),estado:EST_T.indexOf(d.estado)>=0?d.estado:'Pendiente',creado:Number(d.creado)||0,terminado:Number(d.terminado)||0,creadoPor:str(d.creadoPor,80),
+  tareas:function(id,d){return{id:id,empresa:d.empresa==='SATMEC'?'SATMEC':'SATHIRI',titulo:str(d.titulo,200)||'Tarea sin título',detalle:str(d.detalle,4000),proyectoId:str(d.proyectoId,80),responsableId:str(d.responsableId,80),prioridad:PRIOS.indexOf(d.prioridad)>=0?d.prioridad:'Media',vence:dateOr(d.vence),estado:EST_T.indexOf(d.estado)>=0?d.estado:'Pendiente',creado:Number(d.creado)||0,terminado:Number(d.terminado)||0,creadoPor:str(d.creadoPor,80),padreId:str(d.padreId,80),padreTitulo:str(d.padreTitulo,200),
     notas:Array.isArray(d.notas)?d.notas.filter(function(n){return n&&typeof n==='object'}).map(function(n){return{t:Number(n.t)||0,texto:str(n.texto,2000),autorId:str(n.autorId,80)}}):[]}},
   bitacora:function(id,d){var c=Number(d.creado)||0;var p=numOrNull(d.personalObra);return{id:id,fecha:dateOr(d.fecha)||(c?ymd(new Date(c)):today()),proyectoId:str(d.proyectoId,80),residenteId:str(d.residenteId,80),clima:CLIMAS.indexOf(d.clima)>=0?d.clima:'',personalObra:p==null?null:Math.max(0,Math.round(p)),avance:pct(d.avance),trabajos:str(d.trabajos,6000),problemas:str(d.problemas,4000),creado:c}}
 };
@@ -404,7 +416,13 @@ function empTarea(x){var o=x.proyectoId&&st.proyectos.get(x.proyectoId);return o
 function empRep(r){var o=st.proyectos.get(r.proyectoId);return o?o.empresa:''}
 function inCo(e){return !ui.co||!e||e===ui.co}
 function persInCo(p){return !ui.co||p.empresa==='Ambas'||p.empresa===ui.co}
-function canSeeTask(x){return full()||(!!yo&&(x.responsableId===yo||x.creadoPor===yo))}
+function esMiaT(x){return !!x&&!!yo&&(x.responsableId===yo||x.creadoPor===yo)}
+function canSeeTask(x){return full()||esMiaT(x)||(!!x.padreId&&esMiaT(st.tareas.get(x.padreId)))}
+function subsDe(id){var out=[];st.tareas.forEach(function(x){if(x.padreId===id)out.push(x)});return out.sort(byVence)}
+function padreDe(x){return x&&x.padreId?st.tareas.get(x.padreId)||null:null}
+function padreTit(x){var p=padreDe(x);return p?p.titulo:(x.padreTitulo||'')}
+/* una subtarea se muestra dentro de su tarea principal; en la lista solo cuando es de la persona que se está viendo */
+function dentroDePadre(x,persona){if(!x.padreId||!st.tareas.has(x.padreId))return false;return persona?x.responsableId!==persona:true}
 function myObraIds(){var s=new Set();if(!yo)return s;st.proyectos.forEach(function(o){if(o.residenteId===yo)s.add(o.id)});st.tareas.forEach(function(x){if(x.responsableId===yo&&x.proyectoId)s.add(x.proyectoId)});return s}
 function visibleTasks(){return Array.from(st.tareas.values()).filter(function(x){return inCo(empTarea(x))&&canSeeTask(x)})}
 function formObras(){var os=obrasSorted();if(full())return os;var ids=myObraIds();return os.filter(function(o){return ids.has(o.id)})}
@@ -439,7 +457,8 @@ function obraOpts(sel,emptyLabel,onlyOpen,list){
   return (emptyLabel!=null?'<option value="">'+esc(emptyLabel)+'</option>':'')+body;
 }
 
-function taskRow(x){
+function taskRow(x,opts){
+  opts=(opts&&typeof opts==='object')?opts:{};
   var t=today(),due='',cls='';
   if(x.estado==='Terminada'){cls='good';due='Terminada'+(x.terminado?' '+fmtShort(ymd(new Date(x.terminado))):'')}
   else if(x.vence){var d=diffDays(t,x.vence);
@@ -451,14 +470,21 @@ function taskRow(x){
   var stCls=x.estado==='En proceso'?'proc':x.estado==='Terminada'?'done':'';
   var where=x.proyectoId?(obraNombre(x.proyectoId)||'Obra eliminada'):'Oficina';
   var resp=nombre(x.responsableId)||'Sin responsable';
-  var chips=chip(due,'d '+cls)+(!ui.co?coChip(empTarea(x)):'')+chip(where)+chip(resp);
+  var chips=chip(due,'d '+cls)+(!ui.co&&!opts.inParent?coChip(empTarea(x)):'')+(opts.inParent?'':chip(where))+chip(resp);
+  var subs=x.padreId?[]:subsDe(x.id);
+  if(subs.length){
+    var hechas=subs.filter(function(s){return s.estado==='Terminada'}).length;
+    var tarde=subs.filter(function(s){return s.estado!=='Terminada'&&s.vence&&s.vence<t}).length;
+    chips+=chip(hechas+' de '+subs.length+' subtareas',hechas===subs.length?'good':'acc');
+    if(tarde)chips+=chip(plural(tarde,'subtarea atrasada','subtareas atrasadas'),'bad');
+  }
   if(x.estado==='En proceso')chips+=chip('En proceso','warn');
   if(x.prioridad==='Alta'&&x.estado!=='Terminada')chips+=chip('Prioridad alta','bad');
   if(x.notas.length)chips+=chip(plural(x.notas.length,'avance','avances'));
   if(x._pend)chips=chip('Guardando…','pend')+chips;
   return '<div class="trow'+(x.estado==='Terminada'?' done':'')+'">'+
     '<button type="button" class="st '+stCls+'" data-act="cycle" data-id="'+esc(x.id)+'" aria-label="Estado: '+esc(x.estado)+'. Cambiar estado" title="'+esc(x.estado)+' · tocar para cambiar">'+CHECK+'</button>'+
-    '<button type="button" class="tbody" data-act="edit-task" data-id="'+esc(x.id)+'"><span class="ttl">'+esc(x.titulo)+'</span><span class="chips">'+chips+'</span></button></div>';
+    '<button type="button" class="tbody" data-act="edit-task" data-id="'+esc(x.id)+'">'+(x.padreId&&!opts.inParent?'<span class="ptitle">↳ Parte de: <b>'+esc(padreTit(x)||'otra tarea')+'</b></span>':'')+'<span class="ttl">'+esc(x.titulo)+'</span><span class="chips">'+chips+'</span></button></div>';
 }
 
 function obraCard(o){
@@ -521,7 +547,7 @@ function vInicio(){
       (att.length?'<div class="tlist">'+att.map(taskRow).join('')+'</div>':emptyBox(loading()?'Cargando tareas…':'Nada atrasado ni para hoy.'))+
       (m?'<p class="hint">Tienes '+plural(mine,'tarea abierta','tareas abiertas')+'. <button type="button" class="lnk" data-act="mine">Ver mis tareas</button></p>':'<p class="hint">Elige tu nombre arriba, en “Yo soy”, para ver también tus propias tareas.</p>');
   }else{
-    var list=open.slice().sort(byVence);
+    var list=open.filter(function(x){return !dentroDePadre(x,yo)}).sort(byVence);
     left='<div class="shead"><h2>Tus tareas</h2>'+(list.length>12?'<a class="lnk" href="#tareas">Ver todas</a>':'')+'</div>'+
       (list.length?'<div class="tlist">'+list.slice(0,12).map(taskRow).join('')+'</div>':emptyBox(loading()?'Cargando tareas…':'No tienes tareas abiertas.'));
   }
@@ -542,6 +568,8 @@ function vTareas(){
     if(ui.tResp)list=list.filter(function(x){return x.responsableId===ui.tResp});
   }
   if(ui.tObra)list=list.filter(function(x){return x.proyectoId===ui.tObra});
+  var persona=!f?yo:(ui.tf==='mias'?yo:(ui.tResp||''));
+  list=list.filter(function(x){return !dentroDePadre(x,persona)});
   var open=list.filter(function(x){return x.estado!=='Terminada'}).sort(byVence);
   var done=list.filter(function(x){return x.estado==='Terminada'}).sort(function(a,b){return b.terminado-a.terminado});
   var groups=[['Atrasadas',open.filter(function(x){return x.vence&&x.vence<t}),'bad'],['Para hoy',open.filter(function(x){return x.vence===t}),''],['Próximos 7 días',open.filter(function(x){return x.vence>t&&x.vence<=in7}),''],['Más adelante',open.filter(function(x){return x.vence>in7}),''],['Sin fecha',open.filter(function(x){return !x.vence}),'']];
@@ -643,7 +671,7 @@ function saveCache(j){try{var s=store();if(s)s.setItem('tablero.cache',JSON.stri
 function loadCache(){try{var raw=localStorage.getItem('tablero.cache')||sessionStorage.getItem('tablero.cache');if(!raw)return null;var c=JSON.parse(raw);return c&&c.pin===session.pin&&c.j?c:null}catch(e){return null}}
 function clearCache(){try{localStorage.removeItem('tablero.cache');sessionStorage.removeItem('tablero.cache')}catch(e){}}
 function applyData(j,fromCache){
-  st.full=!!j.full;yo=(j.yo&&j.yo.id)||'';st.yoData=j.yo||null;
+  st.full=!!j.full;yo=(j.yo&&j.yo.id)||'';st.yoData=j.yo||null;st.subOK=!!j.subtareas;
   ['personal','proyectos','tareas','bitacora'].forEach(function(n){
     var m=new Map();
     (j[n]||[]).forEach(function(d){if(!d||!d.id)return;try{m.set(String(d.id),NORM[n](String(d.id),d))}catch(e){}});
@@ -686,7 +714,7 @@ async function refresh(intento){
 function snapshot(){return{personal:new Map(st.personal),proyectos:new Map(st.proyectos),tareas:new Map(st.tareas),bitacora:new Map(st.bitacora)}}
 function localApply(c,id,mode,data,extra){
   var m=st[c];if(!m||!NORM[c])return;
-  if(mode==='delete'){m.delete(id);return}
+  if(mode==='delete'){m.delete(id);if(c==='tareas')Array.from(m.keys()).forEach(function(k){if(m.get(k).padreId===id)m.delete(k)});return}
   var cur=id?m.get(id):null;
   var d=Object.assign({},cur||{},data||{},extra||{});
   if(!cur){d.creado=Date.now();d.creadoPor=yo;if(c==='tareas')d.notas=[]}
@@ -748,28 +776,48 @@ function notesHtml(x){
   if(!x.notas.length)return '<p class="hint" style="margin:0">Todavía no hay avances registrados.</p>';
   return x.notas.slice().reverse().map(function(n){return '<div class="note"><span class="who"><b>'+esc(nombre(n.autorId)||'Sin nombre')+'</b> · '+esc(n.t?fmtStamp(n.t):'')+'</span><p>'+esc(n.texto)+'</p></div>'}).join('');
 }
+function subsHtml(x){
+  var subs=subsDe(x.id),hechas=subs.filter(function(s){return s.estado==='Terminada'}).length;
+  var h='<div class="subhead"><h3>Subtareas'+(subs.length?'<span class="n">'+hechas+' de '+subs.length+' hechas</span>':'')+'</h3>'+
+    (st.subOK?'<button type="button" class="btn needs-write" data-act="new-sub" data-id="'+esc(x.id)+'">'+PLUS+'Subtarea</button>':'')+'</div>';
+  if(subs.length){
+    h+='<div class="bar" role="img" aria-label="'+hechas+' de '+subs.length+' subtareas hechas"><i style="width:'+Math.round(hechas*100/subs.length)+'%"></i></div>'+
+      '<div class="tlist">'+subs.map(function(s){return taskRow(s,{inParent:true})}).join('')+'</div>';
+    if(hechas===subs.length&&x.estado!=='Terminada')h+='<div class="allok"><p>Todas las subtareas están hechas.</p><button type="button" class="btn pri needs-write" data-act="finish-parent" data-id="'+esc(x.id)+'">Marcar la tarea como terminada</button></div>';
+  }else h+='<p class="hint" style="margin:0">Divide esta tarea en partes más pequeñas, cada una con su responsable y su fecha.</p>';
+  return h;
+}
 function dlgTask(id,preset){
   var x=id?st.tareas.get(id):null;
   if(id&&!x){toast('Esa tarea ya no existe.','bad');return}
   preset=preset||{};
-  var v=x||{titulo:'',detalle:'',proyectoId:preset.obra||ui.tObra||'',responsableId:preset.resp||(full()?'':yo),prioridad:'Media',vence:'',estado:'Pendiente',notas:[],empresa:ui.co||'SATHIRI'};
+  var padre=x?padreDe(x):(preset.padre?st.tareas.get(preset.padre)||null:null);
+  if(preset.padre&&!padre){toast('La tarea principal ya no existe.','bad');return}
+  var esSubT=x?!!x.padreId:!!padre;
+  var v=x||{titulo:'',detalle:'',proyectoId:padre?padre.proyectoId:(preset.obra||ui.tObra||''),responsableId:preset.resp||(full()?'':yo),prioridad:'Media',vence:'',estado:'Pendiente',notas:[],empresa:padre?padre.empresa:(ui.co||'SATHIRI')};
   var vo=v.proyectoId&&st.proyectos.get(v.proyectoId),vEmp=vo?vo.empresa:(v.empresa||'SATHIRI');
+  var titulo=esSubT?(id?'Subtarea':'Nueva subtarea'):(id?'Tarea':'Nueva tarea');
+  var subsCount=(x&&!x.padreId)?subsDe(x.id).length:0;
   dlgCtx={type:'task',id:id||null};
+  var donde=esSubT?'<div class="inherit"><span>↳ Parte de: '+(padre?'<button type="button" class="lnk" data-act="edit-task" data-id="'+esc(padre.id)+'">'+esc(padre.titulo)+'</button>':'<b>'+esc(padreTit(x)||'otra tarea')+'</b>')+'</span>'+
+    '<span class="muted">Obra: '+esc(v.proyectoId?(obraNombre(v.proyectoId)||'—'):'Oficina (sin obra)')+' · '+esc(vEmp)+'</span></div>':'';
   var noPeople=!st.personal.size?'<p class="dmsg">Todavía no hay personal registrado. Agrégalo en la sección Personal para asignar responsables.</p>':'';
-  openDlg('<form data-form="task" data-id="'+esc(id||'')+'" novalidate>'+dHead(id?'Tarea':'Nueva tarea')+
-    '<div class="dbody"><p class="dmsg" hidden></p>'+noPeople+
+  openDlg('<form data-form="task" data-id="'+esc(id||'')+'" data-padre="'+esc(!x&&padre?padre.id:'')+'" novalidate>'+dHead(titulo)+
+    '<div class="dbody"><p class="dmsg" hidden></p>'+noPeople+donde+
     field('Qué hay que hacer','<input id="t-titulo" name="titulo" maxlength="200" required value="'+esc(v.titulo)+'" placeholder="Ej.: Entregar planilla de avance al cliente"'+(id?'':' autofocus')+'>')+
     field('Detalle (opcional)','<textarea id="t-detalle" name="detalle" rows="3" maxlength="4000" placeholder="Lo que la persona necesita saber para hacerla">'+esc(v.detalle)+'</textarea>')+
+    (esSubT?field('Responsable','<select id="t-resp" name="resp">'+persOpts(v.responsableId,'Sin responsable')+'</select>'):
     '<div class="row2">'+field('Obra','<select id="t-obra" name="obra">'+obraOpts(v.proyectoId,'Oficina (sin obra)',true)+'</select>')+
-    field('Responsable','<select id="t-resp" name="resp">'+persOpts(v.responsableId,'Sin responsable')+'</select>')+'</div>'+
+    field('Responsable','<select id="t-resp" name="resp">'+persOpts(v.responsableId,'Sin responsable')+'</select>')+'</div>')+
     '<div class="row2">'+field('Fecha límite','<input id="t-vence" name="vence" type="date" value="'+esc(v.vence)+'">')+
     field('Estado','<select id="t-estado" name="estado">'+EST_T.map(function(s){return '<option'+(s===v.estado?' selected':'')+'>'+s+'</option>'}).join('')+'</select>')+'</div>'+
-    radios('Empresa','emp',['SATHIRI','SATMEC'],vEmp)+radios('Prioridad','prio',PRIOS,v.prioridad)+
+    (esSubT?'':radios('Empresa','emp',['SATHIRI','SATMEC'],vEmp))+radios('Prioridad','prio',PRIOS,v.prioridad)+
+    (x&&!x.padreId&&(st.subOK||subsCount)?'<section class="subs" id="subs-box">'+subsHtml(x)+'</section>':'')+
     (id?'<section class="notes"><h3>Avances y comentarios</h3><div id="notes-list">'+notesHtml(x)+'</div>'+
       '<div class="note-add needs-write"><textarea id="t-nota" rows="2" maxlength="2000" aria-label="Nuevo avance" placeholder="Escribe un avance o comentario"></textarea>'+
       (yo?'':'<p class="hint" style="margin:0;align-self:flex-start">Elige tu nombre en “Yo soy” para firmar tus avances.</p>')+
       '<button type="button" class="btn" data-act="add-note" data-id="'+esc(id)+'">Agregar avance</button></div></section>':'')+
-    '</div>'+foot(id?delZone('tareas',id,'¿Eliminar esta tarea? No se puede deshacer.'):'')+'</form>',id?'Tarea':'Nueva tarea');
+    '</div>'+foot(id?delZone('tareas',id,subsCount?'¿Eliminar esta tarea y sus '+plural(subsCount,'subtarea','subtareas')+'? No se puede deshacer.':'¿Eliminar esta '+(esSubT?'subtarea':'tarea')+'? No se puede deshacer.'):'')+'</form>',titulo);
 }
 async function submitTask(f){
   var id=f.dataset.id,titulo=val(f,'titulo');
@@ -779,11 +827,13 @@ async function submitTask(f){
   var estado=EST_T.indexOf(val(f,'estado'))>=0?val(f,'estado'):'Pendiente';
   var data={titulo:titulo,detalle:val(f,'detalle'),proyectoId:val(f,'obra'),responsableId:val(f,'resp'),vence:val(f,'vence'),prioridad:radioVal(f,'prio')||'Media',estado:estado,
     terminado:estado==='Terminada'?((old&&old.estado==='Terminada'&&old.terminado)?old.terminado:Date.now()):0};
-  var ob=data.proyectoId&&st.proyectos.get(data.proyectoId);
-  data.empresa=ob?ob.empresa:(radioVal(f,'emp')==='SATMEC'?'SATMEC':'SATHIRI');
-  closeDlg();
+  var padre=f.dataset.padre?st.tareas.get(f.dataset.padre):(old?padreDe(old):null);
+  if(f.dataset.padre&&!padre){toast('La tarea principal ya no existe.','bad');return}
+  if(padre){data.proyectoId=padre.proyectoId;data.empresa=padre.empresa;if(!id)data.padreId=padre.id}
+  else{var ob=data.proyectoId&&st.proyectos.get(data.proyectoId);data.empresa=ob?ob.empresa:(radioVal(f,'emp')==='SATMEC'?'SATMEC':'SATHIRI')}
+  if(padre&&!id)dlgTask(padre.id);else closeDlg();
   var ok=await write(col('tareas').doc(id||''),id?'update':'set',data,titulo);
-  if(ok)toast(id?'Tarea guardada':'Tarea creada');
+  if(ok)toast(padre?(id?'Subtarea guardada':'Subtarea creada'):(id?'Tarea guardada':'Tarea creada'));
 }
 async function cycle(id){
   var x=st.tareas.get(id);if(!x||!guard()||pending.has(id))return;
@@ -791,7 +841,12 @@ async function cycle(id){
   pending.add(id);
   var ok=await write(col('tareas').doc(id),'update',{estado:estado},x.titulo,{terminado:estado==='Terminada'?Date.now():0});
   pending.delete(id);
-  if(ok&&!dlg.open)toast(estado==='Terminada'?'Tarea terminada':'Estado: '+estado);
+  if(!ok)return;
+  var p=padreDe(st.tareas.get(id)||x);
+  if(estado==='Terminada'&&p&&p.estado!=='Terminada'&&subsDe(p.id).every(function(s){return s.estado==='Terminada'})){if(dlg.open&&dlgCtx&&dlgCtx.id===p.id)return;toast('Era la última subtarea de «'+p.titulo+'». Ya puedes cerrar esa tarea.');return}
+  var abiertas=estado==='Terminada'&&!x.padreId?subsDe(id).filter(function(s){return s.estado!=='Terminada'}).length:0;
+  if(abiertas){toast('Tarea terminada. Le quedan '+plural(abiertas,'subtarea abierta','subtareas abiertas')+'.');return}
+  if(!dlg.open)toast(estado==='Terminada'?'Tarea terminada':'Estado: '+estado);
 }
 async function addNote(id,btn){
   var ta=$('#t-nota');if(!ta)return;var texto=ta.value.trim();
@@ -834,7 +889,7 @@ async function submitObra(f){
 }
 function obraViewHtml(o){
   var t=today();
-  var open=Array.from(st.tareas.values()).filter(function(x){return x.proyectoId===o.id&&x.estado!=='Terminada'&&canSeeTask(x)}).sort(byVence);
+  var open=Array.from(st.tareas.values()).filter(function(x){return x.proyectoId===o.id&&x.estado!=='Terminada'&&canSeeTask(x)&&!dentroDePadre(x,full()?'':yo)}).sort(byVence);
   var reps=repsSorted().filter(function(r){return r.proyectoId===o.id}).slice(0,3);
   var ent='—';
   if(o.fin){var d=diffDays(t,o.fin);ent=fmtDMY(o.fin)+(o.estado==='Terminado'?'':d<0?' (vencida hace '+plural(-d,'día','días')+')':d===0?' (hoy)':' (faltan '+plural(d,'día','días')+')')}
@@ -932,7 +987,7 @@ async function del(kind,id,btn){
 }
 function refreshDlg(){
   if(!dlgCtx)return;
-  if(dlgCtx.type==='task'&&dlgCtx.id){var x=st.tareas.get(dlgCtx.id),nl=$('#notes-list');if(x&&nl)nl.innerHTML=notesHtml(x)}
+  if(dlgCtx.type==='task'&&dlgCtx.id){var x=st.tareas.get(dlgCtx.id),nl=$('#notes-list'),sb=$('#subs-box');if(x&&nl)nl.innerHTML=notesHtml(x);if(x&&sb)sb.innerHTML=subsHtml(x)}
   else if(dlgCtx.type==='obra'){var o=st.proyectos.get(dlgCtx.id);if(o){var top=dlg.scrollTop;dlg.innerHTML=obraViewHtml(o);dlg.scrollTop=top}}
 }
 
@@ -945,6 +1000,8 @@ document.addEventListener('click',function(e){
     case 'retry':hideBanner();refresh(1);break;
     case 'new-task':if(guard())dlgTask(null,{obra:el.dataset.obra||''});break;
     case 'edit-task':dlgTask(id);break;
+    case 'new-sub':if(guard())dlgTask(null,{padre:id});break;
+    case 'finish-parent':(async function(){var x=st.tareas.get(id);if(!x||!guard())return;closeDlg();if(await write(col('tareas').doc(id),'update',{estado:'Terminada'},x.titulo,{terminado:Date.now()}))toast('Tarea terminada')})();break;
     case 'cycle':cycle(id);break;
     case 'new-obra':if(guard())dlgObra(null);break;
     case 'edit-obra':dlgObra(id);break;
